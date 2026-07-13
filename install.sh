@@ -1,11 +1,11 @@
 #!/bin/zsh
 #
 # Installer for sr
-# Usage: curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/sr/main/install.sh | zsh
+# Usage: curl -fsSL https://raw.githubusercontent.com/zobbe/mz-scroll-reverser/main/install.sh | zsh
 
 set -e
 
-REPO_RAW="https://raw.githubusercontent.com/YOUR_USERNAME/sr/main"
+REPO_RAW="https://raw.githubusercontent.com/zobbe/mz-scroll-reverser/main"
 INSTALL_DIR="$HOME/.local/bin"
 
 mkdir -p "$INSTALL_DIR"

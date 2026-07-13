@@ -1,7 +1,7 @@
 #!/bin/zsh
 #
 # sr - toggle macOS scroll direction (natural <-> traditional)
-# https://github.com/YOUR_USERNAME/sr
+# https://github.com/zobbe/mz-scroll-reverser
 
 current=$(defaults read -g com.apple.swipescrolldirection 2>/dev/null)
 
