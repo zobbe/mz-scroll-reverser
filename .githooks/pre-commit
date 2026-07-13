@@ -25,4 +25,15 @@ if command -v shellcheck >/dev/null 2>&1; then
   shellcheck -s bash sr install.sh uninstall.sh 2>/dev/null || true
 fi
 
+# reject commits if the configured email looks like a real address rather than
+# the GitHub noreply address
+author_email=$(git config user.email)
+if [[ "$author_email" != *"@users.noreply.github.com" ]]; then
+  echo ""
+  echo "Commit rejected: author email '$author_email' is not a GitHub noreply address."
+  echo "  Run: git config user.email \"zobbe@users.noreply.github.com\""
+  echo ""
+  fail=1
+fi
+
 exit $fail
