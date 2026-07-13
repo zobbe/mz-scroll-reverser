@@ -1,0 +1,38 @@
+#!/bin/zsh
+#
+# commit-msg hook - enforces Conventional Commits
+# https://www.conventionalcommits.org
+#
+# Enabled by: git config core.hooksPath .githooks
+
+commit_msg_file="$1"
+commit_msg=$(head -n1 "$commit_msg_file")
+
+pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9_-]+\))?!?: .{1,88}$'
+
+if [[ ! "$commit_msg" =~ $pattern ]]; then
+  echo ""
+  echo "Commit rejected: message doesn't follow Conventional Commits."
+  echo ""
+  echo "  Format:   type(scope): short description"
+  echo "  Example:  feat(sr): add support for per-device toggling"
+  echo ""
+  echo "  Allowed types:"
+  echo "    feat      new feature"
+  echo "    fix       bug fix"
+  echo "    docs      documentation only"
+  echo "    style     formatting, no code change"
+  echo "    refactor  code change that isn't a fix or feature"
+  echo "    perf      performance improvement"
+  echo "    test      adding or fixing tests"
+  echo "    build     build system or dependencies"
+  echo "    ci        CI configuration"
+  echo "    chore     maintenance, no src or test changes"
+  echo "    revert    reverts a previous commit"
+  echo ""
+  echo "  Your message: \"$commit_msg\""
+  echo ""
+  exit 1
+fi
+
+exit 0

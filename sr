@@ -1,0 +1,19 @@
+#!/bin/zsh
+#
+# sr - toggle macOS scroll direction (natural <-> traditional)
+# https://github.com/YOUR_USERNAME/sr
+
+current=$(defaults read -g com.apple.swipescrolldirection 2>/dev/null)
+
+if [ "$current" = "1" ]; then
+  defaults write -g com.apple.swipescrolldirection -bool false
+  echo "Scroll direction: traditional (reversed)"
+else
+  defaults write -g com.apple.swipescrolldirection -bool true
+  echo "Scroll direction: natural"
+fi
+
+# apps cache this pref, force a refresh so it applies immediately
+killall cfprefsd 2>/dev/null
+
+exit 0

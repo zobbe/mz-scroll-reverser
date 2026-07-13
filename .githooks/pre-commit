@@ -1,0 +1,28 @@
+#!/bin/zsh
+#
+# pre-commit hook - basic sanity checks before allowing a commit
+#
+# Enabled by: git config core.hooksPath .githooks
+
+fail=0
+
+for f in sr install.sh uninstall.sh; do
+  if [ -f "$f" ]; then
+    # syntax check, doesn't execute anything
+    if ! zsh -n "$f"; then
+      echo "Syntax error in $f"
+      fail=1
+    fi
+    # make sure the scripts stay executable
+    if [ ! -x "$f" ]; then
+      echo "$f lost its executable bit, run: chmod +x $f"
+      fail=1
+    fi
+  fi
+done
+
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck -s bash sr install.sh uninstall.sh 2>/dev/null || true
+fi
+
+exit $fail
