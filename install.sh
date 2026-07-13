@@ -20,5 +20,17 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
 fi
 
 echo ""
-echo "Installed. Run 'source ~/.zshrc' or restart your terminal."
-echo "Then just type: sr"
+echo "Installed. Then just type: sr"
+echo ""
+
+# Only prompt if running interactively (not piped)
+if [[ -t 0 ]]; then
+  read "reply?Do you want to restart your terminal? (Y/n) "
+  reply="${reply:-Y}"
+  if [[ "$reply" =~ ^[Yy]$ ]]; then
+    source "$HOME/.zshrc"
+    echo "Terminal reloaded."
+  fi
+else
+  echo "Run 'source ~/.zshrc' or restart your terminal to apply changes."
+fi
