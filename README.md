@@ -12,7 +12,7 @@ Scroll direction: natural
 ## Install
 
 ```
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/sr/main/install.sh | zsh
+curl -fsSL https://raw.githubusercontent.com/zobbe/mz-scroll-reverser/main/install.sh | zsh
 ```
 
 This drops `sr` into `~/.local/bin` and adds that folder to your `PATH` if it isn't there already. Restart your terminal (or `source ~/.zshrc`) and you're done.
@@ -20,7 +20,7 @@ This drops `sr` into `~/.local/bin` and adds that folder to your `PATH` if it is
 ## Uninstall
 
 ```
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/sr/main/uninstall.sh | zsh
+curl -fsSL https://raw.githubusercontent.com/zobbe/mz-scroll-reverser/main/uninstall.sh | zsh
 ```
 
 ## How it works
