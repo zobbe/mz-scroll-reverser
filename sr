@@ -25,6 +25,6 @@ else
 fi
 
 # apps cache this pref, force a refresh so it applies immediately
-killall cfprefsd 2>/dev/null
+/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u 2>/dev/null
 
 exit 0
