@@ -3,6 +3,9 @@
 .AppleDouble
 .LSOverride
 
+# Compiled daemon binary (built from mz-scroll-reverser.swift during install)
+mz-scroll-reverser
+
 # Editor directories and files
 .idea/
 .vscode/
