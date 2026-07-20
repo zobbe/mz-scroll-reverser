@@ -1,30 +1,143 @@
 #!/bin/zsh
 #
-# sr - toggle macOS scroll direction (natural <-> traditional)
+# sr - reverse mouse scroll direction while keeping trackpad natural
 # https://github.com/zobbe/mz-scroll-reverser
+#
+# Runs a lightweight daemon (mz-scroll-reverser) that intercepts scroll-wheel
+# events from a physical mouse and inverts them.  Trackpad scrolling
+# is left untouched.  Requires Accessibility permission.
 
-current=$(defaults read -g com.apple.swipescrolldirection 2>/dev/null)
+STATE_DIR="$HOME/.local/share/sr"
+PID_FILE="$STATE_DIR/sr.pid"
+APP_BUNDLE="$STATE_DIR/mz-scroll-reverser.app"
+DAEMON_BIN="$APP_BUNDLE/Contents/MacOS/mz-scroll-reverser"
+
+# For local dev / testing: if the installed bundle doesn't exist yet but a
+# sibling mz-scroll-reverser binary does (e.g. repo checkout), auto-create the bundle.
+# Launching via `open -a` is what makes mz-scroll-reverser appear as its own entry in
+# System Settings → Privacy & Security → Accessibility instead of your terminal.
+SCRIPT_DIR="${0:A:h}"
+_SIBLING="$SCRIPT_DIR/mz-scroll-reverser"
+if [[ -x "$_SIBLING" ]]; then
+  if [[ ! -d "$APP_BUNDLE" ]] || [[ "$_SIBLING" -nt "$DAEMON_BIN" ]]; then
+    mkdir -p "$APP_BUNDLE/Contents/MacOS"
+    cp "$_SIBLING" "$DAEMON_BIN"
+    cat > "$APP_BUNDLE/Contents/Info.plist" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>mz-scroll-reverser</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.zobbe.mz-scroll-reverser</string>
+    <key>CFBundleName</key>
+    <string>mz-scroll-reverser</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>LSBackgroundOnly</key>
+    <true/>
+    <key>LSUIElement</key>
+    <true/>
+</dict>
+</plist>
+PLIST
+  fi
+fi
+unset _SIBLING
 
 BOLD="\033[1m"
 GREEN="\033[32m"
 YELLOW="\033[33m"
+RED="\033[31m"
 RESET="\033[0m"
 
-if [ "$current" = "1" ]; then
-  defaults write -g com.apple.swipescrolldirection -bool false
-  echo ""
-  echo "${BOLD}${YELLOW}🔄 Scroll direction changed${RESET}"
-  echo "   Now: ${BOLD}Traditional${RESET} (reversed)"
-  echo ""
-else
-  defaults write -g com.apple.swipescrolldirection -bool true
-  echo ""
-  echo "${BOLD}${GREEN}🔄 Scroll direction changed${RESET}"
-  echo "   Now: ${BOLD}Natural${RESET}"
-  echo ""
+# -- helpers ------------------------------------------------------------------
+
+daemon_running() {
+  [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null
+}
+
+check_natural_scrolling() {
+  local current
+  current=$(defaults read -g com.apple.swipescrolldirection 2>/dev/null)
+  if [[ "$current" != "1" ]]; then
+    echo ""
+    echo "${BOLD}${YELLOW}⚠  Natural scrolling is OFF in System Settings.${RESET}"
+    echo "   sr works best with Natural scrolling ON (so your trackpad"
+    echo "   scrolls naturally while mouse scroll is reversed)."
+    echo "   Turn it on in ${BOLD}System Settings → Trackpad → Scroll & Zoom${RESET}."
+    echo ""
+  fi
+}
+
+# -- status -------------------------------------------------------------------
+
+if [[ "$1" == "status" ]]; then
+  if daemon_running; then
+    echo ""
+    echo "${BOLD}${GREEN}● mz-scroll-reverser is running${RESET} (pid $(cat "$PID_FILE"))"
+    echo "  Mouse scroll: ${BOLD}Traditional${RESET} (reversed)"
+    echo ""
+  else
+    echo ""
+    echo "${BOLD}${YELLOW}○ mz-scroll-reverser is not running${RESET}"
+    echo "  Mouse scroll: ${BOLD}Natural${RESET} (same as trackpad)"
+    echo ""
+  fi
+  exit 0
 fi
 
-# apps cache this pref, force a refresh so it applies immediately
-/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u 2>/dev/null
+# -- toggle -------------------------------------------------------------------
+
+if daemon_running; then
+  # Stop the daemon
+  kill "$(cat "$PID_FILE")" 2>/dev/null
+  rm -f "$PID_FILE"
+  echo ""
+  echo "${BOLD}${GREEN}🔄 Mouse scroll: Natural${RESET}"
+  echo "   Trackpad and mouse now scroll the same way."
+  echo ""
+else
+  # Preflight checks
+  if [[ ! -x "$DAEMON_BIN" ]]; then
+    echo ""
+    echo "${BOLD}${RED}✖  mz-scroll-reverser not found${RESET}"
+    echo "   Re-run the installer, or compile mz-scroll-reverser.swift and place"
+    echo "   the binary next to this script:"
+    echo "   ${BOLD}swiftc -O mz-scroll-reverser.swift -o mz-scroll-reverser${RESET}"
+    echo ""
+    exit 1
+  fi
+
+  check_natural_scrolling
+
+  # Launch via LaunchServices so mz-scroll-reverser.app gets its own Accessibility entry
+  # (not the terminal app). The daemon writes its own log to $STATE_DIR/sr.log.
+  open -gn -a "$APP_BUNDLE" 2>/dev/null
+
+  # Give the daemon a moment to start (or fail)
+  sleep 0.5
+
+  if daemon_running; then
+    echo ""
+    echo "${BOLD}${YELLOW}🔄 Mouse scroll: Traditional${RESET} (reversed)"
+    echo "   Trackpad remains Natural.  Run ${BOLD}sr${RESET} again to stop."
+    echo ""
+  else
+    echo ""
+    echo "${BOLD}${RED}✖  mz-scroll-reverser failed to start.${RESET}"
+    echo ""
+    if [[ -f "$STATE_DIR/sr.log" ]]; then
+      cat "$STATE_DIR/sr.log"
+    fi
+    echo "   System Settings should have opened automatically."
+    echo "   Enable ${BOLD}mz-scroll-reverser${RESET} in the Accessibility list, then run ${BOLD}sr${RESET} again."
+    echo ""
+    exit 1
+  fi
+fi
 
 exit 0
